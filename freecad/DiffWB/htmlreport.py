@@ -119,6 +119,11 @@ border-radius:6px}
 .viz .tabs button[aria-selected=true]{background:var(--new);color:#fff;
 border-color:var(--new)}
 .viz .frame{display:none}.viz .frame.on{display:block}
+.wipe{display:flex;align-items:center;justify-content:center;gap:10px;
+margin-bottom:8px;font-size:12px;color:var(--muted)}
+.wipe input{flex:0 1 260px}
+.fcd-changed_old,.fcd-removed{opacity:var(--fcd-old,1)}
+.fcd-changed_new,.fcd-added{opacity:var(--fcd-new,1)}
 details.obj{border:1px solid var(--line);border-radius:8px;margin-bottom:10px;
 background:var(--card);overflow:hidden}
 details.obj>summary{cursor:pointer;padding:10px 14px;font-weight:600;
@@ -163,6 +168,12 @@ if(b)b.onclick=function(){
  root.setAttribute("data-theme",next);
  try{localStorage.setItem(KEY,next);}catch(e){}
 };
+var sl=document.querySelector(".fcd-slider");
+if(sl){var apply=function(){
+ var t=+sl.value;
+ root.style.setProperty("--fcd-old", Math.min(1,(100-t)/50).toFixed(3));
+ root.style.setProperty("--fcd-new", Math.min(1,t/50).toFixed(3));
+};sl.addEventListener("input",apply);apply();}
 var tabs=document.querySelectorAll(".viz .tabs button");
 for(var i=0;i<tabs.length;i++){tabs[i].onclick=function(){
  var v=this.getAttribute("data-view"),wrap=this.closest(".viz");
@@ -236,6 +247,13 @@ def diff_to_html(diff, overlays=None, title=None):
                            % (_esc(name), "true" if i == 0 else "false",
                               _esc(name)))
             out.append('</div>')
+        # old/new wipe: only when there is an old side to fade against
+        if diff.get("changed") or diff.get("removed"):
+            out.append('<div class="wipe"><span>old</span>'
+                       '<input type="range" min="0" max="100" value="50" '
+                       'class="fcd-slider" aria-label="blend old and new" '
+                       'title="Slide to fade between the old and new version">'
+                       '<span>new</span></div>')
         for i, name in enumerate(names):
             svg = _strip_svg_prolog(overlays[name])
             out.append('<div class="frame%s" data-view="%s">%s</div>'

@@ -253,7 +253,11 @@ def build_overlay_svg(diff, old_model, old_shapes, new_model, new_shapes,
         elif st == "unchanged" and oid in new_shapes:
             layers["unchanged"].append(_restyle(_project(new_shapes[oid], dir_vec), "unchanged"))
 
-    body = "\n".join("\n".join(layers[k]) for k in DRAW_ORDER if layers[k])
+    # each layer wrapped in a class-tagged group, so an HTML host can fade the
+    # old side (changed_old, removed) against the new side (changed_new, added)
+    # with a slider -- see htmlreport's old/new wipe
+    body = "\n".join('<g class="fcd-%s">\n%s\n</g>' % (k, "\n".join(layers[k]))
+                     for k in DRAW_ORDER if layers[k])
     if not body.strip():
         body = ""
     bbox = _bbox_of(body) if body else None

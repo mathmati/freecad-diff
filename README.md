@@ -16,8 +16,8 @@ get to something great.
 - JSON, for scripts and CI.
 - SVG overlay: the old and new shapes drawn together, added in green, removed
   in dashed red, changed in blue over a grey ghost of the old shape.
-- HTML report: one file, no external files needed, with the overlay and a row
-  per change.
+- HTML report: one file, no external files needed, with the overlay, an
+  old/new blend slider, and a row per change.
 
 It runs in the GUI, from the command line, and as a git external diff driver
 so `git diff` is readable for `.FCStd` files.
