@@ -9,6 +9,11 @@ We are trying to build a diff engine for FreeCAD. This is our first attempt.
 Detailed feedback is welcome. Send screenshots and errors, we will iterate and
 get to something great.
 
+![Overlay of two versions: a pocket was drilled, shown as removed material in dashed red](docs/overlay-example.png)
+
+Above: two versions of a part. The pocket drilled in the newer version shows
+up as the removed material, outlined in dashed red.
+
 ## What it does
 
 - Text diff: features added or removed, a `Length` going from 15 mm to 20 mm,
