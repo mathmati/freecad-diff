@@ -65,6 +65,9 @@ d = D.diff_models(old_model, new_model)
 
 check("length change detected",
       any(c.get("kind") == "param" for o in d["changed"] for c in o["changes"]))
+pad_new = next(o for o in new_model["objects"] if o["id"] == "Pad")
+check("unused Direction not serialized (save-state noise)",
+      "Direction" not in (pad_new.get("params") or {}))
 check("removed object detected", any(o["id"] == "OldBox" for o in d["removed"]))
 check("text renders", "Length 15 mm -> 22 mm" in R.diff_to_terminal(d, color="never"))
 check("json renders", '"schema"' in R.diff_to_json(d))

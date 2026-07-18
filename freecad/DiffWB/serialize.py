@@ -178,6 +178,20 @@ def _plain(val):
         return str(val)
 
 
+def _approx(a, b, tol=1e-9):
+    """Approximate equality, recursive over lists: floats compared within
+    ``tol`` so a solver artifact like 0.9999999999 counts as its default 1.0
+    (exact compare made default-elision flap between saves, which then read
+    as a phantom param change in the diff)."""
+    if isinstance(a, bool) != isinstance(b, bool):
+        return False
+    if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+        return abs(float(a) - float(b)) <= tol
+    if isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):
+        return len(a) == len(b) and all(_approx(x, y, tol) for x, y in zip(a, b))
+    return a == b
+
+
 def _is_default(name, type_id, default_obj, entry):
     """True if ``entry``'s value equals the property's default (so it can be
     omitted). Conservative: keeps the param on any uncertainty."""
@@ -189,7 +203,7 @@ def _is_default(name, type_id, default_obj, entry):
         dval = _scalar_value(default_obj, name, type_id, {})
     except Exception:
         return False
-    return dval is not None and dval.get("value") == entry.get("value")
+    return dval is not None and _approx(dval.get("value"), entry.get("value"))
 
 
 def _placement(p):
@@ -268,6 +282,12 @@ def _serialize_object(obj):
     for name in obj.PropertiesList:
         if (name in _SKIP_PROPS or name in _NOISE_PROPS
                 or name == "Label" or name.startswith("_")):
+            continue
+        # PartDesign profile features ignore Direction unless UseCustomVector
+        # is on, and FreeCAD stores either the computed normal or the
+        # constructor default there depending on save state -- pure noise
+        # unless the user actually enabled the custom vector.
+        if name == "Direction" and getattr(obj, "UseCustomVector", None) is False:
             continue
         try:
             type_id = obj.getTypeIdOfProperty(name)

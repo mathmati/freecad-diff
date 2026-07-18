@@ -48,8 +48,13 @@ def _fuse(solids):
     for s in solids[1:]:
         try:
             fused = fused.fuse(s)
-        except Exception:
-            # skip a solid that refuses to fuse rather than aborting the whole
+        except Exception as exc:  # noqa: BLE001
+            # skip a solid that refuses to fuse rather than aborting the
+            # whole comparison, but say so: a silently dropped solid means
+            # the reported volumes undercount
+            import sys
+            sys.stderr.write("volumediff: skipped a solid that failed to "
+                             "fuse (%s); volumes may undercount\n" % exc)
             continue
     return fused
 

@@ -190,6 +190,9 @@ def _export_html_report(diff, old_model, old_shapes, new_model, new_shapes,
         path += ".html"
     try:
         material = None
+        # the dialog reuses one diff dict across exports, so clear any volume
+        # section from a previous export before deciding whether to recompute
+        diff.pop("geometry", None)
         if volume and old_shapes is not None and new_shapes is not None:
             from . import volumediff as VD
             _st, old_c, new_c = V.object_statuses(diff, old_model, new_model)

@@ -36,6 +36,8 @@ Known limits right now:
   of a sketch can read as several edited elements.
 - The overlay draws one silhouette per top level shape. A body is drawn once,
   not feature by feature.
+- Shapes are read per object, so extra placement from Part containers or
+  App::Link is not applied in the overlay or the volume numbers yet.
 
 ## Install
 

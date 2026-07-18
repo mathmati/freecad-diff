@@ -72,6 +72,18 @@ def _constraint_sig(c):
     return (c.get("type"), _refs_key(c.get("refs")), c.get("name", ""))
 
 
+def _approx_equal(a, b, tol):
+    """Recursive approximate equality: numbers within ``tol``, containers
+    element-wise, everything else exact."""
+    if isinstance(a, dict) and isinstance(b, dict):
+        return (a.keys() == b.keys()
+                and all(_approx_equal(a[k], b[k], tol) for k in a))
+    if isinstance(a, (list, tuple)) and isinstance(b, (list, tuple)):
+        return (len(a) == len(b)
+                and all(_approx_equal(x, y, tol) for x, y in zip(a, b)))
+    return _values_equal(a, b, tol)
+
+
 def _same_except_value(ca, cb):
     """True if two constraints are identical apart from their numeric value
     (so a within-tolerance value difference can be treated as no change)."""
@@ -152,7 +164,9 @@ def _diff_sketch(old, new, changes, tol=_NUM_TOL):
         changes.append({"kind": "geometry_count",
                         "old": len(og), "new": len(ng)})
     else:
-        n_changed = sum(1 for a, b in zip(og, ng) if a != b)
+        # positional compare honors the numeric tolerance, so sub-tolerance
+        # solver drift does not read as "geometry moved/edited"
+        n_changed = sum(1 for a, b in zip(og, ng) if not _approx_equal(a, b, tol))
         if n_changed:
             changes.append({"kind": "geometry_edited", "count": n_changed})
 

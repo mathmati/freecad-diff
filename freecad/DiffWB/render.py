@@ -70,7 +70,12 @@ def diff_to_csv(diff):
     import io
 
     def _cell(v):
-        return "" if v is None else str(v)
+        s = "" if v is None else str(v)
+        # spreadsheet formula-injection guard: labels are user-controlled, so
+        # a leading = or @ (or sign not starting a number) gets quoted
+        if s[:1] in ("=", "@") or (s[:1] in ("+", "-") and not s[1:2].isdigit()):
+            return "'" + s
+        return s
 
     buf = io.StringIO()
     w = csv.writer(buf)
@@ -84,17 +89,17 @@ def diff_to_csv(diff):
         w.writerow(["material", "", "", "net_volume_mm3", "",
                     _cell(round(g["net_volume"], 3))])
     for c in diff.get("document_changes", []):
-        w.writerow(["document", "", "", c["name"],
+        w.writerow(["document", "", "", _cell(c["name"]),
                     _cell(c.get("old")), _cell(c.get("new"))])
     for o in diff.get("added", []):
-        w.writerow(["added", o.get("label") or o["id"], o.get("type") or "",
-                    "", "", ""])
+        w.writerow(["added", _cell(o.get("label") or o["id"]),
+                    _cell(o.get("type") or ""), "", "", ""])
     for o in diff.get("removed", []):
-        w.writerow(["removed", o.get("label") or o["id"], o.get("type") or "",
-                    "", "", ""])
+        w.writerow(["removed", _cell(o.get("label") or o["id"]),
+                    _cell(o.get("type") or ""), "", "", ""])
     for o in diff.get("changed", []):
-        name = o.get("label") or o["id"]
-        typ = o.get("type") or ""
+        name = _cell(o.get("label") or o["id"])
+        typ = _cell(o.get("type") or "")
         for c in o.get("changes", []):
             field = c.get("name") or c.get("constraint") or c.get("kind")
             w.writerow(["changed", name, typ, _cell(field),
