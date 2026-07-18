@@ -20,8 +20,8 @@ _ICON_DIR = os.path.join(
     "Resources", "Icons")
 
 
-def _icon():
-    return os.path.join(_ICON_DIR, "freecaddiff.svg")
+def _icon(name="freecaddiff"):
+    return os.path.join(_ICON_DIR, name + ".svg")
 
 
 def _status(msg):
@@ -45,7 +45,7 @@ class _ExportCommand(object):
                 "ToolTip": ("Write the active document's semantic model "
                             "(feature tree + sketch constraints + parameters + "
                             "materials) to JSON + Markdown next to the document."),
-                "Pixmap": _icon()}
+                "Pixmap": _icon("export")}
 
     def IsActive(self):
         return App.ActiveDocument is not None
@@ -73,7 +73,7 @@ class _CopyMarkdownCommand(object):
                 "ToolTip": ("Copy the active document's semantic model as "
                             "Markdown to the clipboard, ready to paste into an "
                             "AI chat as grounding context."),
-                "Pixmap": _icon()}
+                "Pixmap": _icon("copy")}
 
     def IsActive(self):
         return App.ActiveDocument is not None
@@ -206,7 +206,7 @@ class _DiffSavedCommand(object):
                 "ToolTip": ("Show what changed in the active document since "
                             "it was last saved: features added or removed, "
                             "parameters changed, constraints edited."),
-                "Pixmap": _icon()}
+                "Pixmap": _icon("diff_saved")}
 
     def IsActive(self):
         doc = App.ActiveDocument
@@ -239,7 +239,7 @@ class _DiffFilesCommand(object):
         return {"MenuText": "Diff Two Files...",
                 "ToolTip": ("Pick two saved FreeCAD documents and show the "
                             "semantic differences between them."),
-                "Pixmap": _icon()}
+                "Pixmap": _icon("diff_files")}
 
     def IsActive(self):
         return True

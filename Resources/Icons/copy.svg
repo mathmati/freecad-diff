@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- two stacked pages = copy -->
+  <rect x="13" y="18" width="27" height="34" rx="3" fill="#eef2f6"
+        stroke="#8c959f" stroke-width="3"/>
+  <rect x="24" y="10" width="27" height="34" rx="3" fill="#dbeafe"
+        stroke="#0969da" stroke-width="3"/>
+  <line x1="30" y1="19" x2="45" y2="19" stroke="#0969da" stroke-width="2.4"/>
+  <line x1="30" y1="26" x2="45" y2="26" stroke="#0969da" stroke-width="2.4"/>
+  <line x1="30" y1="33" x2="41" y2="33" stroke="#0969da" stroke-width="2.4"/>
+</svg>

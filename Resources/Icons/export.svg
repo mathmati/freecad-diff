@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- document with a down arrow = export to file -->
+  <rect x="15" y="9" width="34" height="26" rx="3" fill="#eef2f6"
+        stroke="#8c959f" stroke-width="3"/>
+  <line x1="22" y1="17" x2="42" y2="17" stroke="#8c959f" stroke-width="2.6"/>
+  <line x1="22" y1="24" x2="36" y2="24" stroke="#8c959f" stroke-width="2.6"/>
+  <path d="M32 34 v18 M23 44 l9 9 l9 -9" fill="none" stroke="#1a7f37"
+        stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
