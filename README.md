@@ -1,11 +1,11 @@
 # freecad-diff
 
-Show what changed between two versions of a FreeCAD document. It reads the
+Show what changed between two versions of a FreeCAD file. It reads the
 feature tree, parameters, sketch constraints and materials from each `.FCStd`
 and reports the difference as text, JSON, an SVG overlay of the shapes, or a
 self-contained HTML page.
 
-We are trying to build a diff engine for FreeCAD. This is our first attempt.
+We are trying to build a high quality diff engine for FreeCAD. This is our first attempt.
 Detailed feedback is welcome. Send screenshots and errors, we will iterate and
 get to something great.
 
