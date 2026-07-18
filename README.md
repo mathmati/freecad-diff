@@ -91,6 +91,30 @@ git config diff.fcstd.command "freecadcmd /path/to/tools/freecad_diff.py"
 echo "*.FCStd diff=fcstd" >> .gitattributes
 ```
 
+Once that is set up, `git diff` works between any two points in history, not
+just the last save:
+
+```
+git diff HEAD~5 HEAD -- part.FCStd
+git diff main my-branch -- part.FCStd
+```
+
+## Related tools
+
+FreeCAD already has version-control tooling, and this is meant to sit next to
+it, not replace it:
+
+- History Workbench does in-app visual and tree comparison with a review
+  workflow. If you want to review changes inside FreeCAD, use that.
+- freecad-git and WebTools Git commit and pull FreeCAD files with git.
+- fcinfo (in FreeCAD's source) dumps a file's properties as text for git.
+
+What this tool adds is a headless diff that names which property changed and
+its old and new value (Pad.Length 15 mm to 22 mm, a constraint added, an
+expression changed), between any two versions, as text, CSV, JSON, SVG or
+HTML, from the command line or a git driver. That part is not covered by the
+tools above.
+
 ## How it works
 
 Both files are read into the same JSON model of the document (see
