@@ -75,6 +75,14 @@ def diff_to_csv(diff):
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(["status", "object", "type", "field", "old", "new"])
+    g = diff.get("geometry")
+    if g:
+        w.writerow(["material", "", "", "added_volume_mm3", "",
+                    _cell(round(g["added_volume"], 3))])
+        w.writerow(["material", "", "", "removed_volume_mm3", "",
+                    _cell(round(g["removed_volume"], 3))])
+        w.writerow(["material", "", "", "net_volume_mm3", "",
+                    _cell(round(g["net_volume"], 3))])
     for c in diff.get("document_changes", []):
         w.writerow(["document", "", "", c["name"],
                     _cell(c.get("old")), _cell(c.get("new"))])
@@ -130,6 +138,11 @@ def diff_to_terminal(diff, color="auto", level="normal"):
     lines.append(p("%d to add" % n_add, "green") + ", "
                  + p("%d to change" % n_chg, "yellow") + ", "
                  + p("%d to remove" % n_rem, "red") + ".")
+    g = diff.get("geometry")
+    if g:
+        lines.append("material: " + p(g["added_text"] + " added", "green")
+                     + ", " + p(g["removed_text"] + " removed", "red")
+                     + " (net %s)" % g["net_text"])
     lines.append("")
 
     if doc_changes:

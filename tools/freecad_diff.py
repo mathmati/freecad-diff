@@ -30,6 +30,8 @@ Environment options (all optional):
                      cloud on the overlay (svg/html; off by default)
     FCDIFF_TOLERANCE numeric; ignore dimension/constraint value changes
                      smaller than this (e.g. 0.01), to filter noise
+    FCDIFF_VOLUME   set (non-empty) -> also compute added/removed material
+                     volume via boolean ops (slower; needs the shapes)
     FCDIFF_OUTPUT   path to write to instead of stdout
 
 The same options are also accepted as ``--pass``-forwarded flags
@@ -92,6 +94,7 @@ def _parse_opts(argv):
             "views": tuple((env("FCDIFF_VIEWS") or "iso,front,top").split(",")),
             "callouts": _flag("FCDIFF_CALLOUTS"),
             "tolerance": env("FCDIFF_TOLERANCE"),
+            "volume": _flag("FCDIFF_VOLUME"),
             "output": env("FCDIFF_OUTPUT")}
     pos = []
     i = 0
@@ -188,8 +191,9 @@ def main():
         from freecad.DiffWB import diff as D
         from freecad.DiffWB import loaders
 
-    # HTML and SVG need the geometry; text/json do not.
-    want_shapes = fmt in ("html", "svg")
+    # HTML and SVG need the geometry; text/json do not -- unless a volume
+    # diff was asked for, which needs the shapes regardless of format.
+    want_shapes = fmt in ("html", "svg") or opts["volume"]
     old_model, old_shapes = _load(loaders, old_path, "(absent)", want_shapes)
     new_model, new_shapes = _load(loaders, new_path, "(absent)", want_shapes)
 
@@ -201,6 +205,14 @@ def main():
             sys.stderr.write("freecad_diff: ignoring bad FCDIFF_TOLERANCE %r\n"
                              % opts["tolerance"])
     d = D.diff_models(old_model, new_model, tolerance=tol)
+    if opts["volume"] and old_shapes is not None and new_shapes is not None:
+        try:
+            from DiffWB import volumediff as VD
+        except ImportError:
+            from freecad.DiffWB import volumediff as VD
+        summary = VD.volume_summary(VD.material_delta(old_shapes, new_shapes))
+        if summary:
+            d["geometry"] = summary
     text = _render(D, d, opts, old_model, old_shapes, new_model, new_shapes)
 
     # In git-driver mode git reads the diff from stdout; honoring an ambient

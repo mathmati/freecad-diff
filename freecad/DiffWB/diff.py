@@ -369,11 +369,19 @@ def _document_lines(diff):
     return lines
 
 
+def _geometry_lines(diff):
+    g = diff.get("geometry")
+    if not g:
+        return []
+    return ["  material: %s added, %s removed (net %s)" % (
+        g["added_text"], g["removed_text"], g["net_text"])]
+
+
 def diff_to_text(diff):
     """Render a structured diff as compact, git-style +/~/- text."""
     if is_empty(diff):
         return "No semantic changes.\n"
-    lines = _document_lines(diff)
+    lines = _document_lines(diff) + _geometry_lines(diff)
     for o in diff["added"]:
         lines.append("+ %s (%s) added" % (o.get("label") or o["id"], o.get("type")))
     for o in diff["removed"]:

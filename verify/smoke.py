@@ -83,6 +83,10 @@ html = H.diff_to_html(d, overlays=overlays)
 check("html report self-contained",
       "<!DOCTYPE html>" in html and "<svg" in html
       and 'src="http' not in html and 'href="http' not in html)
+from DiffWB import volumediff as VD  # noqa: E402
+delta = VD.material_delta(old_shapes, new_shapes)
+check("volume delta computes",
+      delta.get("ok") and (delta["added_volume"] > 0 or delta["removed_volume"] > 0))
 check("empty diff is clean", D.is_empty(D.diff_models(old_model, old_model)))
 
 print("\n" + ("ALL SMOKE CHECKS PASSED" if not fails else "FAILED: " + ", ".join(fails)))

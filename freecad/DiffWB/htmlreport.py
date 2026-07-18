@@ -124,6 +124,13 @@ margin-bottom:8px;font-size:12px;color:var(--muted)}
 .wipe input{flex:0 1 260px}
 .fcd-changed_old,.fcd-removed{opacity:var(--fcd-old,1)}
 .fcd-changed_new,.fcd-added{opacity:var(--fcd-new,1)}
+.material{display:flex;gap:14px;align-items:center;flex-wrap:wrap;
+background:var(--card);border:1px solid var(--line);border-radius:8px;
+padding:10px 14px;margin-bottom:16px;font-size:13px}
+.material .mlabel{font-weight:600}
+.material .madd{color:var(--add)}.material .mrem{color:var(--rem)}
+.material .mnet{color:var(--muted);margin-left:auto;
+font-family:ui-monospace,Menlo,Consolas,monospace}
 details.obj{border:1px solid var(--line);border-radius:8px;margin-bottom:10px;
 background:var(--card);overflow:hidden}
 details.obj>summary{cursor:pointer;padding:10px 14px;font-weight:600;
@@ -259,6 +266,17 @@ def diff_to_html(diff, overlays=None, title=None):
             out.append('<div class="frame%s" data-view="%s">%s</div>'
                        % (" on" if i == 0 else "", _esc(name), svg))
         out.append('</div>')
+
+    # volumetric material summary (opt-in; present only when computed)
+    g = diff.get("geometry")
+    if g:
+        out.append('<div class="material">'
+                   '<span class="mlabel">Material</span>'
+                   '<span class="madd">+%s added</span>'
+                   '<span class="mrem">&minus;%s removed</span>'
+                   '<span class="mnet">net %s</span></div>'
+                   % (_esc(g["added_text"]), _esc(g["removed_text"]),
+                      _esc(g["net_text"])))
 
     # document metadata changes (Comment, Company, License, custom Meta)
     doc_changes = diff.get("document_changes", [])
