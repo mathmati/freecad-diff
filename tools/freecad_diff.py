@@ -28,6 +28,8 @@ Environment options (all optional):
     FCDIFF_VIEWS    comma list of iso,front,top,right   (svg/html)
     FCDIFF_CALLOUTS set (non-empty) -> number each change with a revision
                      cloud on the overlay (svg/html; off by default)
+    FCDIFF_TOLERANCE numeric; ignore dimension/constraint value changes
+                     smaller than this (e.g. 0.01), to filter noise
     FCDIFF_OUTPUT   path to write to instead of stdout
 
 The same options are also accepted as ``--pass``-forwarded flags
@@ -89,6 +91,7 @@ def _parse_opts(argv):
             "palette": env("FCDIFF_PALETTE", "default"),
             "views": tuple((env("FCDIFF_VIEWS") or "iso,front,top").split(",")),
             "callouts": _flag("FCDIFF_CALLOUTS"),
+            "tolerance": env("FCDIFF_TOLERANCE"),
             "output": env("FCDIFF_OUTPUT")}
     pos = []
     i = 0
@@ -190,7 +193,14 @@ def main():
     old_model, old_shapes = _load(loaders, old_path, "(absent)", want_shapes)
     new_model, new_shapes = _load(loaders, new_path, "(absent)", want_shapes)
 
-    d = D.diff_models(old_model, new_model)
+    tol = None
+    if opts.get("tolerance"):
+        try:
+            tol = float(opts["tolerance"])
+        except ValueError:
+            sys.stderr.write("freecad_diff: ignoring bad FCDIFF_TOLERANCE %r\n"
+                             % opts["tolerance"])
+    d = D.diff_models(old_model, new_model, tolerance=tol)
     text = _render(D, d, opts, old_model, old_shapes, new_model, new_shapes)
 
     # In git-driver mode git reads the diff from stdout; honoring an ambient

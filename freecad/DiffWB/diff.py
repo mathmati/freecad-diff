@@ -35,13 +35,13 @@ def _entry_value(entry):
     return entry, None, None
 
 
-def _values_equal(a, b):
+def _values_equal(a, b, tol=_NUM_TOL):
     if isinstance(a, bool) != isinstance(b, bool):
         return False
     if isinstance(a, float) and isinstance(b, (int, float)):
-        return abs(a - float(b)) <= _NUM_TOL
+        return abs(a - float(b)) <= tol
     if isinstance(b, float) and isinstance(a, (int, float)):
-        return abs(float(a) - b) <= _NUM_TOL
+        return abs(float(a) - b) <= tol
     return a == b
 
 
@@ -72,6 +72,14 @@ def _constraint_sig(c):
     return (c.get("type"), _refs_key(c.get("refs")), c.get("name", ""))
 
 
+def _same_except_value(ca, cb):
+    """True if two constraints are identical apart from their numeric value
+    (so a within-tolerance value difference can be treated as no change)."""
+    a2 = {k: v for k, v in ca.items() if k != "value"}
+    b2 = {k: v for k, v in cb.items() if k != "value"}
+    return a2 == b2
+
+
 def _fmt_constraint(c):
     refs = ", ".join(_refs_key(c.get("refs")))
     s = c.get("type", "?")
@@ -84,7 +92,7 @@ def _fmt_constraint(c):
     return s
 
 
-def _diff_params(old, new, changes):
+def _diff_params(old, new, changes, tol=_NUM_TOL):
     op, np = old.get("params") or {}, new.get("params") or {}
     for name in sorted(set(op) | set(np)):
         if name not in np:
@@ -98,7 +106,7 @@ def _diff_params(old, new, changes):
         else:
             ov, ou, oe = _entry_value(op[name])
             nv, nu, ne = _entry_value(np[name])
-            if not _values_equal(ov, nv) or ou != nu or oe != ne:
+            if not _values_equal(ov, nv, tol) or ou != nu or oe != ne:
                 ch = {"kind": "param", "name": name,
                       "old": _fmt(ov, ou), "new": _fmt(nv, nu)}
                 if ch["old"] == ch["new"]:
@@ -128,7 +136,7 @@ def _diff_links(old, new, changes):
             changes.append({"kind": "link", "name": name, "old": a, "new": b})
 
 
-def _diff_sketch(old, new, changes):
+def _diff_sketch(old, new, changes, tol=_NUM_TOL):
     os_, ns = old.get("sketch") or {}, new.get("sketch") or {}
 
     # attachment: a reattached sketch is a major edit
@@ -185,8 +193,12 @@ def _diff_sketch(old, new, changes):
         # pair remainders positionally; only claim a value change when the
         # referenced geometry itself is unchanged, else it is an index shift
         for ca, cb in zip(a, b):
-            if (ca.get("dimensional")
-                    and not _values_equal(ca.get("value"), cb.get("value"))
+            val_equal = _values_equal(ca.get("value"), cb.get("value"), tol)
+            if (ca.get("dimensional") and val_equal
+                    and _same_except_value(ca, cb)):
+                # same constraint, value equal within tolerance -> no change
+                continue
+            if (ca.get("dimensional") and not val_equal
                     and _geometry_stable(cb)):
                 changes.append({"kind": "constraint_value",
                                 "constraint": _fmt_constraint(cb),
@@ -205,13 +217,13 @@ def _diff_sketch(old, new, changes):
                             "constraint": _fmt_constraint(c)})
 
 
-def _diff_object(old, new):
+def _diff_object(old, new, tol=_NUM_TOL):
     changes = []
     if old.get("label") != new.get("label"):
         changes.append({"kind": "label", "old": old.get("label"), "new": new.get("label")})
     if old.get("type") != new.get("type"):
         changes.append({"kind": "type", "old": old.get("type"), "new": new.get("type")})
-    _diff_params(old, new, changes)
+    _diff_params(old, new, changes, tol)
     _diff_links(old, new, changes)
     if old.get("role") == "body" or new.get("role") == "body":
         if (old.get("features") or []) != (new.get("features") or []):
@@ -220,7 +232,7 @@ def _diff_object(old, new):
         if old.get("tip") != new.get("tip"):
             changes.append({"kind": "tip", "old": old.get("tip"), "new": new.get("tip")})
     if old.get("sketch") is not None or new.get("sketch") is not None:
-        _diff_sketch(old, new, changes)
+        _diff_sketch(old, new, changes, tol)
     omat, nmat = old.get("material") or {}, new.get("material") or {}
     if omat.get("name") != nmat.get("name"):
         changes.append({"kind": "material", "old": omat.get("name"),
@@ -231,9 +243,15 @@ def _diff_object(old, new):
     return changes
 
 
-def diff_models(old_model, new_model):
+def diff_models(old_model, new_model, tolerance=None):
     """Structured diff of two model-context dicts. Returns a dict with
-    ``added``, ``removed`` and ``changed`` object lists (see module doc)."""
+    ``added``, ``removed`` and ``changed`` object lists (see module doc).
+
+    ``tolerance``: numeric values (dimensions, constraint values) closer than
+    this are treated as unchanged, so sub-tolerance floating-point noise or
+    negligible edits do not show up as changes. Defaults to a tiny epsilon
+    (exact comparison); pass e.g. 0.01 to ignore changes below 0.01 units."""
+    tol = _NUM_TOL if tolerance is None else float(tolerance)
     old_objs = {o["id"]: o for o in old_model.get("objects", [])}
     new_objs = {o["id"]: o for o in new_model.get("objects", [])}
 
@@ -249,7 +267,7 @@ def diff_models(old_model, new_model):
     for oid in old_objs:
         if oid not in new_objs:
             continue
-        ch = _diff_object(old_objs[oid], new_objs[oid])
+        ch = _diff_object(old_objs[oid], new_objs[oid], tol)
         if ch:
             entry = _brief(new_objs[oid])
             entry["changes"] = ch

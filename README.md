@@ -77,7 +77,8 @@ FCDIFF_FORMAT=svg FCDIFF_OUTPUT=diff.svg \
 
 Options: `FCDIFF_FORMAT` (text, json, csv, html, svg), `FCDIFF_COLOR`
 (auto, always, never), `FCDIFF_SUMMARY`, `FCDIFF_PALETTE` (default, okabe-ito),
-`FCDIFF_VIEWS` (iso, front, top, right), `FCDIFF_CALLOUTS`, `FCDIFF_OUTPUT`.
+`FCDIFF_VIEWS` (iso, front, top, right), `FCDIFF_CALLOUTS`,
+`FCDIFF_TOLERANCE` (ignore value changes below this, e.g. 0.01), `FCDIFF_OUTPUT`.
 
 Exit code: 0 no changes, 1 differences found, 2 error.
 
