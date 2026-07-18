@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <style>
+      .node { fill:#bfe0f5; stroke:#3d6d8f; stroke-width:1.5; }
+      .tip  { fill:#7fb3d9; stroke:#2c5169; stroke-width:1.8; }
+      .edge { stroke:#3d6d8f; stroke-width:1.6; }
+      .cst  { stroke:#c020c0; stroke-width:1.4; stroke-dasharray:2.5 2.5; }
+    </style>
+  </defs>
+  <!-- feature-tree nodes (left column) linked by edges -->
+  <line class="edge" x1="16" y1="14" x2="16" y2="32" />
+  <line class="edge" x1="16" y1="32" x2="16" y2="50" />
+  <circle class="node" cx="16" cy="14" r="6" />
+  <circle class="node" cx="16" cy="32" r="6" />
+  <circle class="tip"  cx="16" cy="50" r="6.5" />
+  <!-- a small constraint graph (right) -->
+  <line class="cst" x1="38" y1="20" x2="54" y2="20" />
+  <line class="cst" x1="54" y1="20" x2="54" y2="40" />
+  <line class="cst" x1="38" y1="20" x2="38" y2="40" />
+  <line class="cst" x1="38" y1="40" x2="54" y2="40" />
+  <circle class="node" cx="38" cy="20" r="3.4" />
+  <circle class="node" cx="54" cy="20" r="3.4" />
+  <circle class="node" cx="54" cy="40" r="3.4" />
+  <circle class="node" cx="38" cy="40" r="3.4" />
+</svg>

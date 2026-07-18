@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<package format="1" xmlns="https://wiki.freecad.org/Package_Metadata">
+  <name>FreeCADDiff</name>
+  <description>Show what changed between two versions of a FreeCAD document: features added or removed, parameters and constraints edited, materials changed. Renders the difference as terminal text, JSON, an SVG overlay of the old and new shapes, or a self-contained HTML report. Works as a git external diff driver so "git diff" is readable for .FCStd files, from the command line, and from the GUI. Early first attempt, feedback welcome.</description>
+  <version>0.1.0</version>
+  <date>2026-07-18</date>
+  <maintainer email="177616452+mathmati@users.noreply.github.com">mathmati</maintainer>
+  <license file="LICENSE">MIT</license>
+  <url type="repository" branch="main">https://github.com/mathmati/freecad-diff</url>
+  <url type="readme">https://github.com/mathmati/freecad-diff/raw/main/README.md</url>
+  <url type="bugtracker">https://github.com/mathmati/freecad-diff/issues</url>
+  <icon>Resources/Icons/freecaddiff.svg</icon>
+  <freecadmin>1.1.0</freecadmin>
+  <pythonmin>3.9</pythonmin>
+  <content>
+    <workbench>
+      <classname>DiffWorkbench</classname>
+      <icon>Resources/Icons/freecaddiff.svg</icon>
+    </workbench>
+  </content>
+  <tag>diff</tag>
+  <tag>git</tag>
+  <tag>compare</tag>
+  <tag>versioning</tag>
+  <tag>review</tag>
+</package>
