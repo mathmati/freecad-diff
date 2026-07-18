@@ -242,6 +242,18 @@ def diff_to_html(diff, overlays=None, title=None):
                        % (" on" if i == 0 else "", _esc(name), svg))
         out.append('</div>')
 
+    # document metadata changes (Comment, Company, License, custom Meta)
+    doc_changes = diff.get("document_changes", [])
+    if doc_changes:
+        rows = []
+        for c in doc_changes:
+            rows.append(_row("~", "%s %s -> %s" % (
+                c["name"], c.get("old") or "(unset)", c.get("new") or "(unset)")))
+        out.append('<details class="obj chg" open>'
+                   '<summary><span class="glyph chg">~</span> '
+                   '<span class="label">Document</span></summary>'
+                   '<table class="changes">%s</table></details>' % "".join(rows))
+
     # per-object blocks: changed (open) first, then added, then removed
     for o in diff.get("changed", []):
         out.append(_object_block(o, "~", "chg", open_=True))

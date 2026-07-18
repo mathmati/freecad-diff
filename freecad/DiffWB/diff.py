@@ -278,14 +278,29 @@ def diff_models(old_model, new_model, tolerance=None):
         "schema_version": DIFF_SCHEMA_VERSION,
         "old": old_model.get("document", {}),
         "new": new_model.get("document", {}),
+        "document_changes": _diff_document_meta(old_model, new_model),
         "added": sorted(added, key=lambda o: o["id"]),
         "removed": sorted(removed, key=lambda o: o["id"]),
         "changed": sorted(changed, key=lambda o: o["id"]),
     }
 
 
+def _diff_document_meta(old_model, new_model):
+    """Diff document-level metadata (Comment, Company, License, custom Meta
+    keys). Returns a list of {kind:'meta', name, old, new}."""
+    om = (old_model.get("document") or {}).get("meta") or {}
+    nm = (new_model.get("document") or {}).get("meta") or {}
+    out = []
+    for name in sorted(set(om) | set(nm)):
+        a, b = om.get(name), nm.get(name)
+        if a != b:
+            out.append({"kind": "meta", "name": name, "old": a, "new": b})
+    return out
+
+
 def is_empty(diff):
-    return not (diff["added"] or diff["removed"] or diff["changed"])
+    return not (diff["added"] or diff["removed"] or diff["changed"]
+                or diff.get("document_changes"))
 
 
 def _change_lines(o):
@@ -346,11 +361,19 @@ def _change_lines(o):
     return lines
 
 
+def _document_lines(diff):
+    lines = []
+    for c in diff.get("document_changes", []):
+        lines.append("~ document: %s %s -> %s" % (
+            c["name"], c.get("old") or "(unset)", c.get("new") or "(unset)"))
+    return lines
+
+
 def diff_to_text(diff):
     """Render a structured diff as compact, git-style +/~/- text."""
     if is_empty(diff):
         return "No semantic changes.\n"
-    lines = []
+    lines = _document_lines(diff)
     for o in diff["added"]:
         lines.append("+ %s (%s) added" % (o.get("label") or o["id"], o.get("type")))
     for o in diff["removed"]:

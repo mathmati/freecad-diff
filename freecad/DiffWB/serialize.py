@@ -326,13 +326,39 @@ def _close_scratch():
         pass
 
 
+#: document metadata a user edits on purpose (skip the save-noise fields
+#: LastModifiedBy / *Date, which change on every save)
+_DOC_META_FIELDS = ("Comment", "Company", "License", "LicenseURL", "CreatedBy")
+
+
+def _document_meta(doc):
+    """User-meaningful document metadata: the intentional fields plus any
+    custom key/value pairs in doc.Meta. Empty values are omitted."""
+    meta = {}
+    for attr in _DOC_META_FIELDS:
+        v = getattr(doc, attr, "") or ""
+        if v:
+            meta[attr] = v
+    try:
+        for k, v in dict(doc.Meta).items():
+            if v not in (None, ""):
+                meta["Meta." + k] = v
+    except Exception:
+        pass
+    return meta
+
+
 def serialize_document(doc):
     """Serialize a FreeCAD document to the canonical model-context dict."""
     try:
+        document = {"name": doc.Name, "label": getattr(doc, "Label", doc.Name)}
+        meta = _document_meta(doc)
+        if meta:
+            document["meta"] = meta
         return {
             "schema": SCHEMA_NAME,
             "schema_version": SCHEMA_VERSION,
-            "document": {"name": doc.Name, "label": getattr(doc, "Label", doc.Name)},
+            "document": document,
             "objects": [_serialize_object(o) for o in doc.Objects],
         }
     finally:

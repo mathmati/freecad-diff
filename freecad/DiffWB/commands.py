@@ -114,6 +114,10 @@ def _diff_to_qt_html(diff):
                  '<span style="color:#cf222e">&minus;%d removed</span></p>'
                  % (n_add, n_chg, n_rem))
     parts.append('<pre style="font-family:monospace">')
+    for c in diff.get("document_changes", []):
+        parts.append('<span style="color:#9a6700">~ document: %s %s -&gt; %s</span>\n'
+                     % (e(c["name"]), e(c.get("old") or "(unset)"),
+                        e(c.get("new") or "(unset)")))
     for o in diff.get("added", []):
         parts.append('<span style="color:#1a7f37">+ %s (%s)</span>\n'
                      % (e(o.get("label") or o["id"]), e(o.get("type"))))

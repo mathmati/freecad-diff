@@ -75,6 +75,9 @@ def diff_to_csv(diff):
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(["status", "object", "type", "field", "old", "new"])
+    for c in diff.get("document_changes", []):
+        w.writerow(["document", "", "", c["name"],
+                    _cell(c.get("old")), _cell(c.get("new"))])
     for o in diff.get("added", []):
         w.writerow(["added", o.get("label") or o["id"], o.get("type") or "",
                     "", "", ""])
@@ -120,13 +123,24 @@ def diff_to_terminal(diff, color="auto", level="normal"):
     lines.append(p("Model diff: %s -> %s" % (old_l, new_l), "bold"))
 
     n_add, n_chg, n_rem = _summary_counts(diff)
-    if not (n_add or n_chg or n_rem):
+    doc_changes = diff.get("document_changes", [])
+    if not (n_add or n_chg or n_rem or doc_changes):
         lines.append("No semantic changes.")
         return "\n".join(lines) + "\n"
     lines.append(p("%d to add" % n_add, "green") + ", "
                  + p("%d to change" % n_chg, "yellow") + ", "
                  + p("%d to remove" % n_rem, "red") + ".")
     lines.append("")
+
+    if doc_changes:
+        lines.append(p("Document", "bold"))
+        if not summary:
+            for c in doc_changes:
+                lines.append("    " + p("~ ", "yellow")
+                             + "%s %s -> %s" % (c["name"],
+                               p(c.get("old") or "(unset)", "dim"),
+                               c.get("new") or "(unset)"))
+        lines.append("")
 
     for o in diff.get("added", []):
         lines.append(p(_object_head(o, "+"), "green", "bold"))
