@@ -34,9 +34,12 @@ import FreeCAD as App
 PALETTE = {
     "added":       {"stroke": "#1a7f37", "px": 2.2, "dash": None,       "opacity": 1.0},
     "removed":     {"stroke": "#cf222e", "px": 1.8, "dash": (6.0, 4.0), "opacity": 0.9},
-    "changed_old": {"stroke": "#8c959f", "px": 1.4, "dash": (4.0, 4.0), "opacity": 0.85},
+    "changed_old": {"stroke": "#8c959f", "px": 1.6, "dash": (5.0, 4.0), "opacity": 0.95},
     "changed_new": {"stroke": "#0969da", "px": 2.2, "dash": None,       "opacity": 1.0},
-    "unchanged":   {"stroke": "#d0d7de", "px": 1.0, "dash": None,       "opacity": 1.0},
+    # unchanged is the "what was already here" context: a solid, clearly
+    # defined mid-grey so the baseline reads at a glance under the colored
+    # changes (added/removed/changed are distinguished by hue on top of it).
+    "unchanged":   {"stroke": "#57606a", "px": 1.7, "dash": None,       "opacity": 1.0},
 }
 #: Okabe-Ito colorblind-safe alternative. Same line-style channel as the
 #: default (added solid, removed dashed, changed-old ghosted) so it reads
