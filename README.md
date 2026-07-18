@@ -75,7 +75,7 @@ FCDIFF_FORMAT=svg FCDIFF_OUTPUT=diff.svg \
     freecadcmd tools/freecad_diff.py v1.FCStd v2.FCStd
 ```
 
-Options: `FCDIFF_FORMAT` (text, json, html, svg), `FCDIFF_COLOR`
+Options: `FCDIFF_FORMAT` (text, json, csv, html, svg), `FCDIFF_COLOR`
 (auto, always, never), `FCDIFF_SUMMARY`, `FCDIFF_PALETTE` (default, okabe-ito),
 `FCDIFF_VIEWS` (iso, front, top, right), `FCDIFF_CALLOUTS`, `FCDIFF_OUTPUT`.
 

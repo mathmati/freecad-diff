@@ -62,6 +62,35 @@ def summary_line(diff):
     return "%d to add, %d to change, %d to remove." % (n_add, n_chg, n_rem)
 
 
+def diff_to_csv(diff):
+    """Flat CSV of every change, one row per added/removed object and one row
+    per field changed on a changed object. Columns: status, object, type,
+    field, old, new. For scripts, CI and spreadsheets. Ends in a newline."""
+    import csv
+    import io
+
+    def _cell(v):
+        return "" if v is None else str(v)
+
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["status", "object", "type", "field", "old", "new"])
+    for o in diff.get("added", []):
+        w.writerow(["added", o.get("label") or o["id"], o.get("type") or "",
+                    "", "", ""])
+    for o in diff.get("removed", []):
+        w.writerow(["removed", o.get("label") or o["id"], o.get("type") or "",
+                    "", "", ""])
+    for o in diff.get("changed", []):
+        name = o.get("label") or o["id"]
+        typ = o.get("type") or ""
+        for c in o.get("changes", []):
+            field = c.get("name") or c.get("constraint") or c.get("kind")
+            w.writerow(["changed", name, typ, _cell(field),
+                        _cell(c.get("old")), _cell(c.get("new"))])
+    return buf.getvalue()
+
+
 def _object_head(o, glyph):
     label = o.get("label") or o["id"]
     t = o.get("type") or ""

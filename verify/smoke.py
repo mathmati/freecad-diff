@@ -68,6 +68,10 @@ check("length change detected",
 check("removed object detected", any(o["id"] == "OldBox" for o in d["removed"]))
 check("text renders", "Length 15 mm -> 22 mm" in R.diff_to_terminal(d, color="never"))
 check("json renders", '"schema"' in R.diff_to_json(d))
+csv_out = R.diff_to_csv(d)
+check("csv renders",
+      csv_out.startswith("status,object,type,field,old,new")
+      and "Length" in csv_out)
 svg = V.build_overlay_svg(d, old_model, old_shapes, new_model, new_shapes)
 check("svg overlay renders", "<svg" in svg and "changed (new)" in svg)
 svg_co = V.build_overlay_svg(d, old_model, old_shapes, new_model, new_shapes,

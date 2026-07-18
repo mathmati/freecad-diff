@@ -21,7 +21,7 @@ interface that is reliable under freecadcmd:
         freecadcmd freecad_diff.py old.FCStd new.FCStd
 
 Environment options (all optional):
-    FCDIFF_FORMAT   text | json | html | svg   (default: text)
+    FCDIFF_FORMAT   text | json | csv | html | svg   (default: text)
     FCDIFF_COLOR    auto | always | never      (text ANSI; default: auto)
     FCDIFF_SUMMARY  set (non-empty) -> object heads only, no detail rows
     FCDIFF_PALETTE  default | okabe-ito        (svg/html visuals)
@@ -53,7 +53,7 @@ import sys
 print = functools.partial(print, flush=True)
 
 _NULL_PATHS = ("/dev/null", "nul", "NUL")
-_FORMATS = ("text", "json", "html", "svg")
+_FORMATS = ("text", "json", "csv", "html", "svg")
 
 #: set once main() knows whether it was invoked as git's external-diff
 #: driver, so the top-level crash handler can still exit 0 in that mode
@@ -216,6 +216,8 @@ def _render(D, d, opts, old_model, old_shapes, new_model, new_shapes):
         from freecad.DiffWB import render as R
     if fmt == "json":
         return R.diff_to_json(d)
+    if fmt == "csv":
+        return R.diff_to_csv(d)
     if fmt == "text":
         level = "summary" if opts["summary"] else "normal"
         return R.diff_to_terminal(d, color=opts["color"], level=level)
