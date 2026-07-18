@@ -84,9 +84,16 @@ check("html report self-contained",
       "<!DOCTYPE html>" in html and "<svg" in html
       and 'src="http' not in html and 'href="http' not in html)
 from DiffWB import volumediff as VD  # noqa: E402
-delta = VD.material_delta(old_shapes, new_shapes)
+_st, old_c, new_c = V.object_statuses(d, old_model, new_model)
+delta = VD.material_delta(old_shapes, new_shapes,
+                          old_ids=set(old_c), new_ids=set(new_c))
 check("volume delta computes",
       delta.get("ok") and (delta["added_volume"] > 0 or delta["removed_volume"] > 0))
+mat = (delta.get("added_shape"), delta.get("removed_shape"))
+svg_mat = V.build_overlay_svg(d, old_model, old_shapes, new_model, new_shapes,
+                              material=mat)
+check("material renders in overlay",
+      "fcd-added_material" in svg_mat or "fcd-removed_material" in svg_mat)
 check("empty diff is clean", D.is_empty(D.diff_models(old_model, old_model)))
 
 print("\n" + ("ALL SMOKE CHECKS PASSED" if not fails else "FAILED: " + ", ".join(fails)))

@@ -146,16 +146,22 @@ def _show_diff_dialog(title, diff, on_export_html=None):
     lay.addWidget(view)
     row = QtWidgets.QHBoxLayout()
     callout_cb = None
+    material_cb = None
     if on_export_html is not None:
         callout_cb = QtWidgets.QCheckBox("Number changes (revision clouds)", dlg)
         callout_cb.setToolTip("Circle and number each added/removed/changed "
                               "object on the visual overlay in the HTML report.")
         row.addWidget(callout_cb)
+        material_cb = QtWidgets.QCheckBox("Show added/removed material", dlg)
+        material_cb.setToolTip("Compute the actual material added and removed "
+                               "(boolean volume) and draw it. Slower.")
+        row.addWidget(material_cb)
     row.addStretch(1)
     if on_export_html is not None:
         html_btn = QtWidgets.QPushButton("Export HTML Report...", dlg)
         html_btn.clicked.connect(
-            lambda: on_export_html(callout_cb.isChecked()))
+            lambda: on_export_html(callout_cb.isChecked(),
+                                   material_cb.isChecked()))
         row.addWidget(html_btn)
     copy_btn = QtWidgets.QPushButton("Copy Text", dlg)
     close_btn = QtWidgets.QPushButton("Close", dlg)
@@ -169,7 +175,7 @@ def _show_diff_dialog(title, diff, on_export_html=None):
 
 
 def _export_html_report(diff, old_model, old_shapes, new_model, new_shapes,
-                        default_name, callouts=False):
+                        default_name, callouts=False, volume=False):
     """Save-dialog -> write the self-contained HTML report (with visual
     overlay) -> open it in the user's browser."""
     from . import htmlreport as H
@@ -183,11 +189,21 @@ def _export_html_report(diff, old_model, old_shapes, new_model, new_shapes,
     if not path.lower().endswith(".html"):
         path += ".html"
     try:
+        material = None
+        if volume and old_shapes is not None and new_shapes is not None:
+            from . import volumediff as VD
+            _st, old_c, new_c = V.object_statuses(diff, old_model, new_model)
+            delta = VD.material_delta(old_shapes, new_shapes,
+                                      old_ids=set(old_c), new_ids=set(new_c))
+            summary = VD.volume_summary(delta)
+            if summary:
+                diff["geometry"] = summary
+                material = (delta.get("added_shape"), delta.get("removed_shape"))
         overlays = {}
         if old_shapes is not None and new_shapes is not None:
             overlays = V.build_overlays(diff, old_model, old_shapes,
                                         new_model, new_shapes,
-                                        callouts=callouts)
+                                        callouts=callouts, material=material)
         html = H.diff_to_html(diff, overlays=overlays)
         # the report contains non-ASCII glyphs (arrows, minus sign); write
         # UTF-8 explicitly so it does not crash on a non-UTF-8 locale
@@ -233,9 +249,9 @@ class _DiffSavedCommand(object):
         base = os.path.splitext(doc.FileName)[0] + ".diff.html"
         _show_diff_dialog(
             "Model diff: saved vs current", d,
-            on_export_html=lambda co: _export_html_report(
+            on_export_html=lambda co, vol: _export_html_report(
                 d, old_model, old_shapes, new_model, new_shapes, base,
-                callouts=co))
+                callouts=co, volume=vol))
 
 
 class _DiffFilesCommand(object):
@@ -268,9 +284,9 @@ class _DiffFilesCommand(object):
         base = os.path.splitext(b)[0] + ".diff.html"
         _show_diff_dialog(
             "Model diff: %s -> %s" % (os.path.basename(a), os.path.basename(b)),
-            d, on_export_html=lambda co: _export_html_report(
+            d, on_export_html=lambda co, vol: _export_html_report(
                 d, old_model, old_shapes, new_model, new_shapes, base,
-                callouts=co))
+                callouts=co, volume=vol))
 
 
 def register():

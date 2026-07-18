@@ -15,7 +15,8 @@ get to something great.
   a constraint removed, a label renamed, the tip feature changed.
 - JSON, for scripts and CI.
 - SVG overlay: the old and new shapes drawn together, added in green, removed
-  in dashed red, changed in blue over a grey ghost of the old shape.
+  in dashed red, changed in blue over a grey ghost of the old shape. With
+  FCDIFF_VOLUME it also outlines the actual material added or removed.
 - HTML report: one file, no external files needed, with the overlay, an
   old/new blend slider, and a row per change.
 

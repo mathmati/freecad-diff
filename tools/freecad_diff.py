@@ -208,11 +208,21 @@ def main():
     if opts["volume"] and old_shapes is not None and new_shapes is not None:
         try:
             from DiffWB import volumediff as VD
+            from DiffWB import svgdiff as VSV
         except ImportError:
             from freecad.DiffWB import volumediff as VD
-        summary = VD.volume_summary(VD.material_delta(old_shapes, new_shapes))
+            from freecad.DiffWB import svgdiff as VSV
+        # only fuse top-level shape carriers, not intermediate features
+        _st, old_c, new_c = VSV.object_statuses(d, old_model, new_model)
+        delta = VD.material_delta(old_shapes, new_shapes,
+                                  old_ids=set(old_c), new_ids=set(new_c))
+        summary = VD.volume_summary(delta)
         if summary:
             d["geometry"] = summary
+            # keep the boolean shapes so the visual overlay can outline the
+            # actual added/removed material chunk
+            opts["_material"] = (delta.get("added_shape"),
+                                 delta.get("removed_shape"))
     text = _render(D, d, opts, old_model, old_shapes, new_model, new_shapes)
 
     # In git-driver mode git reads the diff from stdout; honoring an ambient
@@ -248,12 +258,14 @@ def _render(D, d, opts, old_model, old_shapes, new_model, new_shapes):
         from DiffWB import svgdiff as V
     except ImportError:
         from freecad.DiffWB import svgdiff as V
+    material = opts.get("_material")
     if fmt == "svg":
         view = opts["views"][0] if opts["views"] else "iso"
         return V.build_overlay_svg(d, old_model, old_shapes or {},
                                    new_model, new_shapes or {},
                                    direction=view, palette=opts["palette"],
                                    callouts=opts.get("callouts", False),
+                                   material=material,
                                    title="%s -> %s" % (
                                        old_model["document"]["label"],
                                        new_model["document"]["label"]))
@@ -265,7 +277,8 @@ def _render(D, d, opts, old_model, old_shapes, new_model, new_shapes):
     overlays = V.build_overlays(d, old_model, old_shapes or {},
                                 new_model, new_shapes or {},
                                 views=opts["views"], palette=opts["palette"],
-                                callouts=opts.get("callouts", False))
+                                callouts=opts.get("callouts", False),
+                                material=material)
     return H.diff_to_html(d, overlays=overlays)
 
 

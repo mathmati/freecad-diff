@@ -18,11 +18,16 @@ dicts it already loaded for the visual overlay.
 """
 
 
-def _solids(shapes):
+def _solids(shapes, ids=None):
     """All solid bodies across a ``{id: Part.Shape}`` dict (skip wires, faces,
-    sketches and null/zero-volume shapes)."""
+    sketches and null/zero-volume shapes). If ``ids`` is given, only those
+    object ids are used -- important so intermediate PartDesign features (a Pad
+    whose result the Body already contains) are not double-counted, which would
+    fuse a pocket back closed and hide the change."""
     out = []
-    for s in (shapes or {}).values():
+    for oid, s in (shapes or {}).items():
+        if ids is not None and oid not in ids:
+            continue
         try:
             if s is None or s.isNull():
                 continue
@@ -49,14 +54,17 @@ def _fuse(solids):
     return fused
 
 
-def material_delta(old_shapes, new_shapes):
+def material_delta(old_shapes, new_shapes, old_ids=None, new_ids=None):
     """Return a dict describing the material added/removed between the two
     shape sets. Keys: ok, old_volume, new_volume, added_volume,
     removed_volume, common_volume, net_volume, and (for rendering)
     added_shape / removed_shape (Part.Shape or None). On failure: ok=False
-    plus ``error``."""
-    old_f = _fuse(_solids(old_shapes))
-    new_f = _fuse(_solids(new_shapes))
+    plus ``error``.
+
+    ``old_ids``/``new_ids``: restrict fusing to these object ids (the top-level
+    shape carriers), so intermediate features are not double-counted."""
+    old_f = _fuse(_solids(old_shapes, old_ids))
+    new_f = _fuse(_solids(new_shapes, new_ids))
     res = {"ok": True, "added_shape": None, "removed_shape": None,
            "old_volume": 0.0, "new_volume": 0.0, "added_volume": 0.0,
            "removed_volume": 0.0, "common_volume": 0.0, "net_volume": 0.0}

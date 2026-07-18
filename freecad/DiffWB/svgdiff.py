@@ -40,6 +40,10 @@ PALETTE = {
     # defined mid-grey so the baseline reads at a glance under the colored
     # changes (added/removed/changed are distinguished by hue on top of it).
     "unchanged":   {"stroke": "#57606a", "px": 1.7, "dash": None,       "opacity": 1.0},
+    # the actual boolean material added/removed between versions (volume diff);
+    # drawn bold on top so the isolated chunk of material stands out.
+    "added_material":   {"stroke": "#1a7f37", "px": 3.0, "dash": None,       "opacity": 1.0},
+    "removed_material": {"stroke": "#cf222e", "px": 2.6, "dash": (6.0, 4.0), "opacity": 1.0},
 }
 #: Okabe-Ito colorblind-safe alternative. Same line-style channel as the
 #: default (added solid, removed dashed, changed-old ghosted) so it reads
@@ -51,14 +55,18 @@ PALETTE_OKABE_ITO = {
     "removed":     {"stroke": "#d55e00", "px": 1.8, "dash": (6.0, 4.0), "opacity": 0.95},
     "changed_old": {"stroke": "#999999", "px": 1.4, "dash": (4.0, 4.0), "opacity": 0.85},
     "changed_new": {"stroke": "#0072b2", "px": 2.2, "dash": None,       "opacity": 1.0},
-    "unchanged":   {"stroke": "#cccccc", "px": 1.0, "dash": None,       "opacity": 1.0},
+    "unchanged":   {"stroke": "#666666", "px": 1.7, "dash": None,       "opacity": 1.0},
+    "added_material":   {"stroke": "#009e73", "px": 3.0, "dash": None,       "opacity": 1.0},
+    "removed_material": {"stroke": "#d55e00", "px": 2.6, "dash": (6.0, 4.0), "opacity": 1.0},
 }
 
 #: named palettes selectable by string (build_overlay_svg ``palette=``)
 PALETTES = {"default": PALETTE, "okabe-ito": PALETTE_OKABE_ITO}
 
-#: bottom-to-top draw order so the informative strokes win overlaps
-DRAW_ORDER = ("unchanged", "changed_old", "changed_new", "removed", "added")
+#: bottom-to-top draw order so the informative strokes win overlaps; the
+#: boolean material chunks (when computed) sit on top of everything
+DRAW_ORDER = ("unchanged", "changed_old", "changed_new", "removed", "added",
+              "removed_material", "added_material")
 
 LEGEND = (
     ("added", "added"),
@@ -205,7 +213,8 @@ def _number_badge(x, y, n, color):
 
 def build_overlay_svg(diff, old_model, old_shapes, new_model, new_shapes,
                       direction="iso", width=760, height=560,
-                      palette=None, title=None, legend=True, callouts=False):
+                      palette=None, title=None, legend=True, callouts=False,
+                      material=None):
     """Compose the styled overlay SVG (returned as a string).
 
     ``old_shapes``/``new_shapes``: {object_id: Part.Shape} (see
@@ -253,6 +262,18 @@ def build_overlay_svg(diff, old_model, old_shapes, new_model, new_shapes,
         elif st == "unchanged" and oid in new_shapes:
             layers["unchanged"].append(_restyle(_project(new_shapes[oid], dir_vec), "unchanged"))
 
+    # boolean material chunks (from volumediff), drawn bold on top
+    if material:
+        added_shape, removed_shape = material
+        for shp, cls in ((removed_shape, "removed_material"),
+                         (added_shape, "added_material")):
+            if shp is None:
+                continue
+            try:
+                layers[cls].append(_restyle(_project(shp, dir_vec), cls))
+            except Exception:
+                continue
+
     # each layer wrapped in a class-tagged group, so an HTML host can fade the
     # old side (changed_old, removed) against the new side (changed_new, added)
     # with a slider -- see htmlreport's old/new wipe
@@ -294,7 +315,8 @@ def build_overlay_svg(diff, old_model, old_shapes, new_model, new_shapes,
         body = body.replace("__OP_%s__" % cls, "%.3g" % spec.get("opacity", 1.0))
 
     # legend + title in SCREEN space (outer svg), model in inner viewBox'd svg
-    legend_h = 34 if legend else 0
+    has_material = bool(layers["added_material"] or layers["removed_material"])
+    legend_h = (34 + (18 if has_material else 0)) if legend else 0
     title_h = 26 if title else 0
     total_h = height + legend_h + title_h
     out = []
@@ -337,26 +359,40 @@ def build_overlay_svg(diff, old_model, old_shapes, new_model, new_shapes,
                                        sh + 2 * pad, color))
             out.append(_number_badge(sx - pad, sy - pad, i, color))
     if legend:
-        lx = 12
-        ly = yoff + height + 22
-        for cls, label in LEGEND:
-            spec = pal[cls]
-            dash = spec.get("dash")
-            dash_attr = (' stroke-dasharray="%g %g"' % dash) if dash else ""
-            out.append('<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="%s" '
-                       'stroke-width="%g"%s stroke-opacity="%g"/>'
-                       % (lx, ly - 4, lx + 26, ly - 4, spec["stroke"],
-                          max(spec["px"], 1.6), dash_attr, spec.get("opacity", 1.0)))
-            out.append('<text x="%d" y="%d" font-family="sans-serif" font-size="12" '
-                       'fill="#24292f">%s</text>' % (lx + 32, ly, _esc(label)))
-            lx += 32 + 9 * len(label) + 34
+        base_y = yoff + height + 22
+        material_items = []
+        if layers["added_material"]:
+            material_items.append(("added_material", "material added"))
+        if layers["removed_material"]:
+            material_items.append(("removed_material", "material removed"))
+
+        def _draw_legend(items, ly):
+            lx = 12
+            for cls, label in items:
+                spec = pal[cls]
+                dash = spec.get("dash")
+                dash_attr = (' stroke-dasharray="%g %g"' % dash) if dash else ""
+                out.append('<line x1="%d" y1="%d" x2="%d" y2="%d" stroke="%s" '
+                           'stroke-width="%g"%s stroke-opacity="%g"/>'
+                           % (lx, ly - 4, lx + 26, ly - 4, spec["stroke"],
+                              max(spec["px"], 1.6), dash_attr,
+                              spec.get("opacity", 1.0)))
+                out.append('<text x="%d" y="%d" font-family="sans-serif" '
+                           'font-size="12" fill="#24292f">%s</text>'
+                           % (lx + 32, ly, _esc(label)))
+                lx += 32 + 9 * len(label) + 34
+
+        _draw_legend(list(LEGEND), base_y)
+        if material_items:
+            _draw_legend(material_items, base_y + 18)
     out.append('</svg>')
     return "\n".join(out)
 
 
 def build_overlays(diff, old_model, old_shapes, new_model, new_shapes,
                    views=("iso", "front", "top"), palette=None,
-                   width=760, height=560, legend=True, callouts=False):
+                   width=760, height=560, legend=True, callouts=False,
+                   material=None):
     """Build one overlay SVG per named view. Returns an ordered
     ``{view_name: svg_string}`` dict (skipping any view that fails to
     project). Convenience wrapper over :func:`build_overlay_svg` for the
@@ -367,7 +403,7 @@ def build_overlays(diff, old_model, old_shapes, new_model, new_shapes,
             out[v] = build_overlay_svg(
                 diff, old_model, old_shapes, new_model, new_shapes,
                 direction=v, width=width, height=height, palette=palette,
-                title=None, legend=legend, callouts=callouts)
+                title=None, legend=legend, callouts=callouts, material=material)
         except Exception as exc:  # noqa: BLE001
             # a failed projection drops just that view; make the omission
             # diagnosable rather than silently shipping a viz-less report
