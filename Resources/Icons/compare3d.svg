@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- two versions of a part overlaid in 3D: old (grey ghost, back),
+       new (Okabe-Ito bluish green, front) -->
+  <g stroke="#8c959f" stroke-width="3" fill="#eef2f6">
+    <path d="M13 20 L27 12 L41 20 L41 36 L27 44 L13 36 Z"/>
+    <path d="M13 20 L27 28 L41 20 M27 28 L27 44" fill="none"/>
+  </g>
+  <g stroke="#009e73" stroke-width="3" fill="#d5efe7">
+    <path d="M23 28 L37 20 L51 28 L51 44 L37 52 L23 44 Z"/>
+    <path d="M23 28 L37 36 L51 28 M37 36 L37 52" fill="none"/>
+  </g>
+</svg>

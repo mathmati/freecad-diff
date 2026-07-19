@@ -90,6 +90,22 @@ class _CopyMarkdownCommand(object):
             _status("FreeCAD Diff: copy failed (%s)" % exc)
 
 
+def _pick_two_files():
+    """Shared two-file pick flow: old version first, new version second (the
+    second dialog starts in the first file's directory). Returns
+    ``(old_path, new_path)`` or None if the user cancels."""
+    filt = "FreeCAD documents (*.FCStd)"
+    a, _ = QtWidgets.QFileDialog.getOpenFileName(
+        Gui.getMainWindow(), "Older version", "", filt)
+    if not a:
+        return None
+    b, _ = QtWidgets.QFileDialog.getOpenFileName(
+        Gui.getMainWindow(), "Newer version", os.path.dirname(a), filt)
+    if not b:
+        return None
+    return a, b
+
+
 def _diff_to_qt_html(diff):
     """A small rich-text fragment for Qt's rich-text engine (a subset of
     HTML/CSS -- no flexbox/sticky, so this is deliberately simple: colored
@@ -268,15 +284,10 @@ class _DiffFilesCommand(object):
         return True
 
     def Activated(self):
-        filt = "FreeCAD documents (*.FCStd)"
-        a, _ = QtWidgets.QFileDialog.getOpenFileName(
-            Gui.getMainWindow(), "Older version", "", filt)
-        if not a:
+        picked = _pick_two_files()
+        if not picked:
             return
-        b, _ = QtWidgets.QFileDialog.getOpenFileName(
-            Gui.getMainWindow(), "Newer version", os.path.dirname(a), filt)
-        if not b:
-            return
+        a, b = picked
         try:
             old_model, old_shapes = loaders.model_and_shapes_from_file(a, want_shapes=True)
             new_model, new_shapes = loaders.model_and_shapes_from_file(b, want_shapes=True)
@@ -292,8 +303,114 @@ class _DiffFilesCommand(object):
                 callouts=co, volume=vol))
 
 
+# The one open 3D-comparison legend dialog (single comparison session, like
+# the single temporary DiffView document). Cleared when the dialog closes.
+_legend_dialog = None
+
+
+def _close_legend():
+    global _legend_dialog
+    if _legend_dialog is not None:
+        try:
+            _legend_dialog.close()
+        except Exception:
+            pass
+        _legend_dialog = None
+
+
+def _show_compare_legend(title, diff, counts):
+    """Small non-modal legend/info dialog for the 3D comparison: the diff
+    summary counts, one colored row per status group, and a Close button
+    that also removes the temporary comparison document. Holds no reference
+    to the document itself, so closing the document by hand first is fine
+    (teardown then simply finds nothing to close)."""
+    from . import render as R
+    from . import viewdiff as VD3
+    global _legend_dialog
+
+    dlg = QtWidgets.QDialog(Gui.getMainWindow())
+    dlg.setWindowTitle(title)
+    lay = QtWidgets.QVBoxLayout(dlg)
+    summary = QtWidgets.QLabel("<b>%s</b>" % R.summary_line(diff), dlg)
+    lay.addWidget(summary)
+    for key, _name, label in VD3.GROUPS:
+        style = VD3.VIEW_STYLE[key]
+        lay.addWidget(QtWidgets.QLabel(
+            '<span style="color:%s">&#9632;</span> %s: %d'
+            % (style["color"], label, counts.get(key, 0)), dlg))
+    hint = QtWidgets.QLabel("Toggle a group's visibility in the model tree "
+                            "to show or hide a category.", dlg)
+    hint.setWordWrap(True)
+    lay.addWidget(hint)
+    row = QtWidgets.QHBoxLayout()
+    row.addStretch(1)
+    close_btn = QtWidgets.QPushButton("Close comparison", dlg)
+    row.addWidget(close_btn)
+    lay.addLayout(row)
+
+    def _teardown():
+        VD3.close_comparison_documents()
+        dlg.close()
+
+    def _forget(*_a):
+        global _legend_dialog
+        if _legend_dialog is dlg:
+            _legend_dialog = None
+
+    close_btn.clicked.connect(_teardown)
+    dlg.finished.connect(_forget)
+    _legend_dialog = dlg
+    dlg.show()
+
+
+class _Compare3DCommand(object):
+    def GetResources(self):
+        return {"MenuText": "Compare in 3D",
+                "ToolTip": ("Pick two saved FreeCAD documents and show both "
+                            "versions together in the 3D view: added, removed, "
+                            "changed and unchanged shapes in distinct colors, "
+                            "in a temporary comparison document."),
+                "Pixmap": _icon("compare3d")}
+
+    def IsActive(self):
+        return True
+
+    def Activated(self):
+        from . import viewdiff as VD3
+
+        picked = _pick_two_files()
+        if not picked:
+            return
+        a, b = picked
+        try:
+            old_model, old_shapes = loaders.model_and_shapes_from_file(a)
+            new_model, new_shapes = loaders.model_and_shapes_from_file(b)
+        except Exception as exc:  # noqa: BLE001
+            _status("FreeCAD Diff: 3D comparison failed (%s)" % exc)
+            return
+        d = D.diff_models(old_model, new_model)
+        _close_legend()
+        try:
+            doc, counts = VD3.build_comparison_document(
+                d, old_model, old_shapes, new_model, new_shapes)
+            VD3.apply_view_styles(doc)
+        except Exception as exc:  # noqa: BLE001
+            _status("FreeCAD Diff: 3D comparison failed (%s)" % exc)
+            return
+        try:
+            App.setActiveDocument(doc.Name)
+            Gui.activeDocument().activeView().viewIsometric()
+            Gui.SendMsgToActiveView("ViewFit")
+        except Exception:
+            pass
+        _show_compare_legend(
+            "3D comparison: %s -> %s" % (os.path.basename(a), os.path.basename(b)),
+            d, counts)
+
+
 def register():
     Gui.addCommand("Diff_Export", _ExportCommand())
     Gui.addCommand("Diff_CopyMarkdown", _CopyMarkdownCommand())
     Gui.addCommand("Diff_DiffSaved", _DiffSavedCommand())
     Gui.addCommand("Diff_DiffFiles", _DiffFilesCommand())
+    Gui.addCommand("Diff_Compare3D", _Compare3DCommand())

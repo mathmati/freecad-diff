@@ -18,7 +18,7 @@ class DiffWorkbench(Gui.Workbench):
     def Initialize(self):
         from . import commands
         commands.register()
-        tools = ["Diff_DiffSaved", "Diff_DiffFiles",
+        tools = ["Diff_DiffSaved", "Diff_DiffFiles", "Diff_Compare3D",
                  "Diff_Export", "Diff_CopyMarkdown"]
         self.appendToolbar("FreeCAD Diff", tools)
         self.appendMenu("FreeCAD Diff", tools)

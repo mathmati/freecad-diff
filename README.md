@@ -24,6 +24,11 @@ up as the removed material, outlined in dashed red.
   FCDIFF_VOLUME it also outlines the actual material added or removed.
 - HTML report: one file, no external files needed, with the overlay, an
   old/new blend slider, and a row per change.
+- 3D comparison in the FreeCAD viewport: both versions shown together in a
+  temporary document, added in green, removed in transparent vermillion,
+  changed in blue over a grey ghost of the old shape, unchanged as quiet
+  context. Each status is a group in the tree, so you can show and hide
+  categories with the normal visibility toggles.
 
 It runs in the GUI, from the command line, and as a git external diff driver
 so `git diff` is readable for `.FCStd` files.
@@ -64,6 +69,10 @@ In the FreeCAD Diff workbench:
 
 - Diff Against Saved: what changed since the last save.
 - Diff Two Files: pick two saved documents and compare them.
+- Compare in 3D: pick two saved documents and see both versions overlaid in
+  the 3D view, colored by status. A small legend window shows the counts; its
+  Close button removes the temporary comparison document again. The
+  comparison document is never saved, and closing it by hand is fine too.
 
 Both show a colored summary, with an Export HTML Report button that writes the
 visual report. There is a checkbox to number each change with a revision cloud.
@@ -108,13 +117,17 @@ git diff HEAD~5 HEAD -- part.FCStd
 git diff main my-branch -- part.FCStd
 ```
 
-## Related tools
+## Prior art
 
 FreeCAD already has version-control tooling, and this is meant to sit next to
 it, not replace it:
 
-- History Workbench does in-app visual and tree comparison with a review
-  workflow. If you want to review changes inside FreeCAD, use that.
+- [History Workbench](https://github.com/eblanshey/HistoryWorkbench) is the
+  in-FreeCAD version-control-and-review tool: commits, history browsing, tree
+  comparison and a 3D comparison view, all inside the application. This addon
+  differs in that it is a diff engine: it works with your existing git
+  repository, runs headless in pipelines, and produces reports you can share
+  with people who do not have FreeCAD.
 - freecad-git and WebTools Git commit and pull FreeCAD files with git.
 - fcinfo (in FreeCAD's source) dumps a file's properties as text for git.
 

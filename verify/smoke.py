@@ -99,6 +99,81 @@ check("material renders in overlay",
       "fcd-added_material" in svg_mat or "fcd-removed_material" in svg_mat)
 check("empty diff is clean", D.is_empty(D.diff_models(old_model, old_model)))
 
+# --- 3D comparison document (viewdiff) -------------------------------------
+from DiffWB import serialize as S  # noqa: E402
+from DiffWB import viewdiff as V3  # noqa: E402
+
+
+def build_pair(path, fresh, gone, mod_len):
+    doc = App.newDocument("p")
+    doc.addObject("Part::Box", "Shared")
+    doc.addObject("Part::Box", "Mod").Length = mod_len
+    if gone:
+        doc.addObject("Part::Box", "Gone").Placement.Base = App.Vector(30, 0, 0)
+    if fresh:
+        doc.addObject("Part::Box", "Fresh").Placement.Base = App.Vector(-30, 0, 0)
+    doc.addObject("App::DocumentObjectGroup", "Grp")  # carrier with no Shape
+    doc.addObject("Spreadsheet::Sheet", "Sheet")      # filtered out upstream
+    doc.recompute()
+    doc.saveAs(path)
+    App.closeDocument(doc.Name)
+
+
+pa = os.path.join(tmp, "a.FCStd")
+pb = os.path.join(tmp, "b.FCStd")
+build_pair(pa, fresh=False, gone=True, mod_len=5.0)
+build_pair(pb, fresh=True, gone=False, mod_len=8.0)
+doc_a = App.openDocument(pa)
+doc_b = App.openDocument(pb)
+model_a, model_b = S.serialize_document(doc_a), S.serialize_document(doc_b)
+shapes_a = loaders.shapes_from_document(doc_a)
+shapes_b = loaders.shapes_from_document(doc_b)
+d3 = D.diff_models(model_a, model_b)
+n_a, n_b = len(doc_a.Objects), len(doc_b.Objects)
+
+cmp_doc, counts3 = V3.build_comparison_document(d3, model_a, shapes_a,
+                                                model_b, shapes_b)
+V3.apply_view_styles(cmp_doc)  # no ViewObjects headless: must be a no-op
+
+check("comparison doc has the five status groups",
+      all(cmp_doc.getObject(name) is not None for _k, name, _l in V3.GROUPS))
+check("group member counts match the fixture",
+      counts3 == {"added": 1, "removed": 1, "changed_new": 1,
+                  "changed_old": 1, "unchanged": 1})
+
+
+def members(name):
+    return sorted(o.Label for o in cmp_doc.getObject(name).Group)
+
+
+check("statuses map to the right groups",
+      members("Added") == ["Fresh"] and members("Removed") == ["Gone"]
+      and members("Unchanged") == ["Shared"]
+      and all(lbl.startswith("Mod")
+              for lbl in members("ChangedNew") + members("ChangedOld")))
+st3, _oc3, _nc3 = V.object_statuses(d3, model_a, model_b)
+check("no-Shape objects are skipped silently",
+      st3.get("Grp") == "unchanged"
+      and sum(counts3.values()) == 5
+      and all(o.Label != "Grp" for o in cmp_doc.Objects))
+check("comparison doc is named DiffView and unsaved",
+      cmp_doc.Name.startswith("DiffView") and not cmp_doc.FileName)
+check("input documents are untouched",
+      len(doc_a.Objects) == n_a and len(doc_b.Objects) == n_b
+      and not doc_a.isTouched() and not doc_b.isTouched())
+
+cmp_doc2, counts3b = V3.build_comparison_document(d3, model_a, shapes_a,
+                                                  model_b, shapes_b)
+marked = [dd for dd in App.listDocuments().values() if dd.Comment == V3.MARKER]
+check("re-running replaces the previous comparison doc",
+      len(marked) == 1 and counts3b == counts3)
+check("teardown closes the comparison doc",
+      V3.close_comparison_documents() == 1
+      and not any(dd.Comment == V3.MARKER
+                  for dd in App.listDocuments().values()))
+App.closeDocument(doc_a.Name)
+App.closeDocument(doc_b.Name)
+
 print("\n" + ("ALL SMOKE CHECKS PASSED" if not fails else "FAILED: " + ", ".join(fails)))
 sys.stdout.flush()
 os._exit(1 if fails else 0)
